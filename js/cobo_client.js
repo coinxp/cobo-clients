@@ -45,6 +45,34 @@ class CoboClient {
         return x
     };
 
+    async newAddress(coin) {
+        const params = {
+            'coin': coin
+        };
+        return await this.coboFetch('POST', '/v1/custody/new_address/', params);
+    }
+
+    async withdrawRequest(coin, request_id, address, amount, memo, fee, gaslimit, gasprice) {
+        const params = {
+            'coin': coin,
+            'request_id': request_id,
+            'address': address,
+            'amount': amount,
+            'memo': memo,
+            'fee': fee,
+            'gaslimit': gaslimit,
+            'gasprice': gasprice
+        };
+        return await this.coboFetch('POST', '/v1/custody/new_withdraw_request/', params);
+    }
+
+    async withdrawInfo(request_id) {
+        const params = {
+            'request_id': request_id
+        };
+        return await this.coboFetch('GET', '/v1/custody/withdraw_info_by_request_id/', params);
+    }
+
     async coboFetch(method, path, params) {
         this.logger.info('Received %s request on path %s with params %s.', method, path, JSON.stringify(params));
         let nonce = String(new Date().getTime());
