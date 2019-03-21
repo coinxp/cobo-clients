@@ -2,44 +2,44 @@ const crypto = require('crypto');
 const sha256 = require('sha256');
 const bip66 = require('bip66');
 const fetch = require('node-fetch');
-const ec = new require('elliptic').ec('secp256k1')
+const ec = new require('elliptic').ec('secp256k1');
 
-const ZERO = Buffer.alloc(1, 0)
+const ZERO = Buffer.alloc(1, 0);
 
 let host = "https://api.sandbox.cobo.com";
 
 let api_key = "x";
 let api_secret = "x";
 
-let sig_type = 'hmac'
+let sig_type = 'hmac';
 
 function toDER(x){
-    let i = 0
-    while (x[i] === 0) ++i
-    if (i === x.length) return ZERO
-    x = x.slice(i)
-    if (x[0] & 0x80) return Buffer.concat([ZERO, x], 1 + x.length)
+    let i = 0;
+    while (x[i] === 0) ++i;
+    if (i === x.length) return ZERO;
+    x = x.slice(i);
+    if (x[0] & 0x80) return Buffer.concat([ZERO, x], 1 + x.length);
     return x
 }
 
 const sign_ecc = (message, api_secret) =>{
-    let privateKey = Buffer.from(api_secret, 'hex')
-    let result = ec.sign(Buffer.from(sha256.x2(message), 'hex'), privateKey)
-    var r = new Buffer(result.r.toString(16, 64), 'hex')
-    var s = new Buffer(result.s.toString(16, 64), 'hex')
+    let privateKey = Buffer.from(api_secret, 'hex');
+    let result = ec.sign(Buffer.from(sha256.x2(message), 'hex'), privateKey);
+    var r = new Buffer(result.r.toString(16, 64), 'hex');
+    var s = new Buffer(result.s.toString(16, 64), 'hex');
     r = toDER(r);
     s = toDER(s);
     return bip66.encode(r, s).toString('hex');
 };
 
 const sign_hmac = (message, api_secret) => {
-    console.log(message)
+    console.log(message);
     var x = crypto.createHmac('sha256', api_secret)
                     .update(message)
                     .digest('hex');
     console.log(x);
     return x
-}
+};
 
 const coboFetch = (method, path, params, api_key, api_secret, host = 'https://api.sandbox.cobo.com') => {
     let nonce = String(new Date().getTime());
@@ -48,9 +48,9 @@ const coboFetch = (method, path, params, api_key, api_secret, host = 'https://ap
     }).join('&');
     let content = [method, path, nonce, sort_params].join('|');
     var signature = '';
-    if (sig_type == 'ecdsa') {
+    if (sig_type === 'ecdsa') {
         signature = sign_ecc(content, api_secret) 
-    } else if (sig_type == 'hmac') {
+    } else if (sig_type === 'hmac') {
         signature = sign_hmac(content, api_secret) 
     } else {
         throw "unexpected sig_type " + sig_type;
@@ -62,12 +62,12 @@ const coboFetch = (method, path, params, api_key, api_secret, host = 'https://ap
         'Biz-Api-Signature': signature
     };
 
-    if (method == 'GET') {
+    if (method === 'GET') {
         return fetch(host + path + '?' + sort_params, {
             'method': method,
             'headers': headers,
         });
-    } else if (method == 'POST') {
+    } else if (method === 'POST') {
         headers['Content-Type'] = "application/x-www-form-urlencoded";
         return fetch(host + path, {
             'method': method,
@@ -77,7 +77,7 @@ const coboFetch = (method, path, params, api_key, api_secret, host = 'https://ap
     }else{
         throw "unexpected method " + method;
     }
-}
+};
 
 coboFetch('POST', '/v1/custody/new_withdraw_request/', 
         {
