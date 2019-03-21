@@ -10,9 +10,10 @@
   "author": "",
   "license": "GPL-3.0",
   "dependencies": {
-    "sha256": "0.2.0",
     "bip66": "1.1.5",
+    "elliptic": "6.4.1",
+    "loglevel": "^1.6.1",
     "node-fetch": "2.3.0",
-    "elliptic": "6.4.1"
+    "sha256": "0.2.0"
   }
 }
