@@ -10,11 +10,12 @@ const ZERO = Buffer.alloc(1, 0);
 class CoboClient {
 
     constructor(api_key, api_secret, sig_type = 'hmac', host = 'https://api.sandbox.cobo.com') {
-        this.host = host;
         this.api_key = api_key;
         this.api_secret = api_secret;
         this.sig_type = sig_type;
+        this.host = host;
         this.logger = loglevel.getLogger(`cobo-client-logger`);
+        this.logger.setLevel('info')
     }
 
     static toDER(x) {
@@ -26,8 +27,8 @@ class CoboClient {
         return x
     }
 
-    static sign_ecc(message, api_secret) {
-        let privateKey = Buffer.from(api_secret, 'hex');
+    sign_ecc(message) {
+        let privateKey = Buffer.from(this.api_secret, 'hex');
         let result = ec.sign(Buffer.from(sha256.x2(message), 'hex'), privateKey);
         let r = new Buffer(result.r.toString(16, 64), 'hex');
         let s = new Buffer(result.s.toString(16, 64), 'hex');
@@ -36,9 +37,9 @@ class CoboClient {
         return bip66.encode(r, s).toString('hex');
     };
 
-    sign_hmac(message, api_secret) {
+    sign_hmac(message) {
         this.logger.debug(message);
-        let x = crypto.createHmac('sha256', api_secret)
+        let x = crypto.createHmac('sha256', this.api_secret)
             .update(message)
             .digest('hex');
         this.logger.debug(x);
@@ -73,6 +74,15 @@ class CoboClient {
         return await this.coboFetch('GET', '/v1/custody/withdraw_info_by_request_id/', params);
     }
 
+    async testCoin(coin, address, amount) {
+        const params = {
+            'coin': coin,
+            'address': address,
+            'amount': amount
+        };
+        return await this.coboFetch('POST', '/v1/custody/faucet_test_coin/', params);
+    }
+
     async coboFetch(method, path, params) {
         this.logger.info('Received %s request on path %s with params %s.', method, path, JSON.stringify(params));
         let nonce = String(new Date().getTime());
@@ -82,9 +92,9 @@ class CoboClient {
         let content = [method, path, nonce, sort_params].join('|');
         let signature = '';
         if (this.sig_type === 'ecdsa') {
-            signature = CoboClient.sign_ecc(content, this.api_secret)
+            signature = this.sign_ecc(content)
         } else if (this.sig_type === 'hmac') {
-            signature = this.sign_hmac(content, this.api_secret)
+            signature = this.sign_hmac(content)
         } else {
             throw "unexpected sig_type " + this.sig_type;
         }
@@ -105,14 +115,15 @@ class CoboClient {
             return result;
         } else if (method === 'POST') {
             headers['Content-Type'] = "application/x-www-form-urlencoded";
-            const result = await fetch(this.host + path, {
+            const result = await fetch((this.host + path), {
                 'method': method,
                 'headers': headers,
                 'body': sort_params
             });
+            const json = await result.json();
             this.logger.info("Processed %s requerst on path %s with params %s and returned %s.",
-                method, path, JSON.stringify(params), JSON.stringify(result));
-            return result;
+                method, path, JSON.stringify(params), JSON.stringify(json));
+            return json;
         } else {
             throw "unexpected method " + method;
         }
