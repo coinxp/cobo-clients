@@ -53,17 +53,28 @@ class CoboClient {
         return await this.coboFetch('POST', '/v1/custody/new_address/', params);
     }
 
+    async txHistories(coin, side, address, max_id, limit, begin_time) {
+        let params = {};
+        if (coin) params['coin'] = coin;
+        if (side) params['side'] = side;
+        if (address) params['address'] = address;
+        if (max_id) params['max_id'] = max_id;
+        if (limit) params['limit'] = limit;
+        if (begin_time) params['begin_time'] = begin_time;
+        return await this.coboFetch('GET', '/v1/custody/transaction_history/', params);
+    }
+
     async withdrawRequest(coin, request_id, address, amount, memo, fee, gaslimit, gasprice) {
-        const params = {
+        let params = {
             'coin': coin,
             'request_id': request_id,
             'address': address,
             'amount': amount,
-            'memo': memo,
-            'fee': fee,
-            'gaslimit': gaslimit,
-            'gasprice': gasprice
+            'memo': memo
         };
+        if (fee) params['fee'] = fee;
+        if (gaslimit) params['gaslimit'] = gaslimit;
+        if (gasprice) params['gasprice'] = gasprice;
         return await this.coboFetch('POST', '/v1/custody/new_withdraw_request/', params);
     }
 
@@ -110,9 +121,10 @@ class CoboClient {
                 'method': method,
                 'headers': headers,
             });
+            const json = await result.json();
             this.logger.info("Processed %s request on path %s with params %s and returned %s.",
-                method, path, JSON.stringify(params), JSON.stringify(result));
-            return result;
+                method, path, JSON.stringify(params), JSON.stringify(json));
+            return json;
         } else if (method === 'POST') {
             headers['Content-Type'] = "application/x-www-form-urlencoded";
             const result = await fetch((this.host + path), {
@@ -121,7 +133,7 @@ class CoboClient {
                 'body': sort_params
             });
             const json = await result.json();
-            this.logger.info("Processed %s requerst on path %s with params %s and returned %s.",
+            this.logger.info("Processed %s request on path %s with params %s and returned %s.",
                 method, path, JSON.stringify(params), JSON.stringify(json));
             return json;
         } else {
