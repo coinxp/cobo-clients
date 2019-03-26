@@ -143,13 +143,13 @@ describe('CoboClient', function() {
             });
         });
 
-        it('should return error for amount of zero', async function() {
+        it('should return success for amount of zero', async function() {
             coins.forEach(async function(coin){
                 const result = await coboClient.newAddress(coin);
                 const address = result['result']['address'];
                 const request_id = random_str();
                 const result2 = await coboClient.withdrawRequest(coin, request_id, address, 0);
-                assert(result2['success']  === false);
+                assert(result2['success']  === true);
 
             });
         });
