@@ -9,13 +9,13 @@ const ZERO = Buffer.alloc(1, 0);
 
 class CoboClient {
 
-    constructor(api_key, api_secret, sig_type = 'hmac', host = 'https://api.sandbox.cobo.com') {
+    constructor(api_key, api_secret, sig_type = 'hmac', host = 'https://api.sandbox.cobo.com', level = 'info') {
         this.api_key = api_key;
         this.api_secret = api_secret;
         this.sig_type = sig_type;
         this.host = host;
         this.logger = loglevel.getLogger(`cobo-client-logger`);
-        this.logger.setLevel('info')
+        this.logger.setLevel(level);
     }
 
     static toDER(x) {
@@ -45,6 +45,10 @@ class CoboClient {
         this.logger.debug(x);
         return x
     };
+
+    async accountInfo() {
+        return await this.coboFetch('GET', '/v1/custody/org_info/', {});
+    }
 
     async newAddress(coin) {
         const params = {
@@ -76,13 +80,6 @@ class CoboClient {
         if (gaslimit) params['gaslimit'] = gaslimit;
         if (gasprice) params['gasprice'] = gasprice;
         return await this.coboFetch('POST', '/v1/custody/new_withdraw_request/', params);
-    }
-
-    async withdrawInfo(request_id) {
-        const params = {
-            'request_id': request_id
-        };
-        return await this.coboFetch('GET', '/v1/custody/withdraw_info_by_request_id/', params);
     }
 
     async testCoin(coin, address, amount) {
